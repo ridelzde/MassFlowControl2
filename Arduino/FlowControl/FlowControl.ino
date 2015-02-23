@@ -1,3 +1,24 @@
+/* YourDuino.com Example Software Sketch
+ 20 character 4 line I2C Display
+ Backpack Interface labelled "YwRobot Arduino LCM1602 IIC V1"
+ Connect Vcc and Ground, SDA to A4, SCL to A5 on Arduino
+ terry@yourduino.com */
+
+/*-----( Import needed libraries )-----*/
+#include <Wire.h>  // Comes with Arduino IDE
+// Get the LCD I2C Library here: 
+// https://bitbucket.org/fmalpartida/new-liquidcrystal/downloads
+// Move any other LCD libraries to another folder or delete them
+// See Library "Docs" folder for possible commands etc.
+#include <LiquidCrystal_I2C.h>
+
+/*-----( Declare Constants )-----*/
+/*-----( Declare objects )-----*/
+// set the LCD address to 0x27 for a 20 chars 4 line display
+// Set the pins on the I2C chip used for LCD connections:
+//                    addr, en,rw,rs,d4,d5,d6,d7,bl,blpol
+LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I2C address
+
 // buttonchecker_nodelay_Adafruit.ino
 // // http://www.ediy.com.my/index.php/tutorials/item/96-debouncing-multiple-switches
     #define DEBOUNCE 10 // how many ms to debounce, 5+ ms is usually plenty
@@ -25,24 +46,31 @@ boolean dalkove = false;
 boolean remoteState = false;
 boolean remoteStateLast;
 String line = "";
-
+char str[10];
 unsigned long timerRED;
 unsigned long timerBLACK;
-unsigned long remoteTriggerTimer;
+unsigned long timerDACread;
+unsigned long previousMillis = 0;
 int lightOutput = 8;
 boolean allowRED = false;
 boolean allowBLACK = false;
 int prevcounter;
 int counter = 0; 
+int prevnacteno;
 int nacteno = 0;
 
 void setup() {
   byte i;
-Serial.begin(9600); //set up serial port
+//Serial.begin(9600); //set up serial port
 //SPI.begin();
 //pinMode(pinSelect, OUTPUT);
 SPI_init(); //inicializace prenosu do DAC
-
+lcd.begin(20,4);
+lcd.backlight();
+lcd.setCursor(0,0);
+lcd.print("read: 0 l/m");
+lcd.setCursor(0,2);
+lcd.print("set: 0 l/m");
 //SPI.begin();
 //SPI.setBitOrder(MSBFIRST);
 //pinMode(10, OUTPUT);
@@ -58,18 +86,13 @@ pinMode(DACoutputReadPin, INPUT);
 for (i=0; i< NUMBUTTONS; i++) {
   pinMode(buttons[i], INPUT);
   digitalWrite(buttons[i], HIGH);
-  Serial.println(0);
+  //Serial.println(0);
 }
 }
 
 
 void loop() {  
-  if(millis() > remoteTriggerTimer + 100){
-  remoteTriggerTimer = millis();
-  dalkove = digitalRead(remoteTriggerPin);
-  }  
-  if(!dalkove){
-    remoteState = false;
+
     if(pressed[0]){
       if(!allowRED){
     timerRED = millis(); //Serial.println("start REDtimer");
@@ -85,18 +108,23 @@ void loop() {
         counter ++; 
         if(counter>=MAX_PRUTOK)counter=MAX_PRUTOK;
         //Serial.println (counter/4096.0*100,4);//Serial.println (timerRED);
+        lcd.setCursor(0,0);
+        lcd.print("set: "+String(counter));
         timerRED=timerRED-1;//rychlost loopu je vetsi nez zmena v millis()
       }
     }    
   }
 //po odmacknuti tlacitka zapise novou hodnotu prutoku do DAC
-if(justreleased[0]&&allowRED){allowRED=false;
+if(justreleased[0]&&allowRED){
+  allowRED=false;
   DACinput = (int)((counter*4095.0/100.0)); //prevod rozsahu prutokomeru (0-100) na 12bitove cislo (0-4095)
   setDAC(DACinput);
+  lcd.setCursor(0,1);
+  lcd.print(String(DACinput)+" "+String(DACinput/4095.0*5.0)+"V"+" ");
   //delay(50);  
   //Serial.print("Poslano do DAC: ");Serial.print(DACinput);Serial.print("  |  ");Serial.print(counter);Serial.print(" l/min");
   //Serial.print("  |  ");Serial.print(DACinput/4095.0*5.0, 4);Serial.println(" V");
-  nacteno = analogRead(DACoutputReadPin);
+  //nacteno = analogRead(DACoutputReadPin);
   //Serial.print("Precteno z DAC: ");Serial.print(nacteno);Serial.print("  |  ");
   //Serial.print(nacteno/1023.0*100.0, 3);Serial.print(" l/min");Serial.print("  |  ");
   //Serial.print(nacteno*5.0/1023.0, 4);Serial.println(" V");
@@ -114,6 +142,8 @@ if(pressed[1]){
 
       if (counter <= 0)counter = 0;
       else counter --; 
+      lcd.setCursor(0,0);
+      lcd.print("set: "+String(counter));
         //Serial.println (counter/4096.0*100,4);
         timerBLACK=timerBLACK-1;
       }
@@ -122,11 +152,13 @@ if(pressed[1]){
   if(justreleased[1]&&allowBLACK){
     allowBLACK=false;
     DACinput = (int)((counter*4095.0/100.0));
-    setDAC(DACinput); 
+    setDAC(DACinput);
+    lcd.setCursor(0,1);
+    lcd.print(String(DACinput)+" "+String(DACinput/4095.0*5.0)+"V"+" "); 
   //delay(50); 
   //Serial.print("Poslano do DAC: ");Serial.print(DACinput);Serial.print("  |  ");Serial.print(counter);Serial.print(" l/min");
   //Serial.print("  |  ");Serial.print(DACinput/4095.0*5.0, 4);Serial.println(" V");
-  nacteno = analogRead(DACoutputReadPin);
+  //nacteno = analogRead(DACoutputReadPin);
   //Serial.print("Precteno z DAC: ");Serial.print(nacteno);Serial.print("  |  ");
   //Serial.print(nacteno/1023.0*100.0, 3);Serial.print(" l/min");Serial.print("  |  ");
   //Serial.print(nacteno*5.0/1023.0, 4);Serial.println(" V");
@@ -138,7 +170,7 @@ byte thisSwitch=thisSwitch_justPressed();
 switch(thisSwitch)
 {
 case 0://stisk RED buttonu
-Serial.println("switch RED just pressed");
+//Serial.println("switch RED just pressed");
 counter++;
 if(counter>=MAX_PRUTOK)counter=MAX_PRUTOK; //Serial.println (counter/4096.0*100,4);
 /* pocita cas mezi stisky tlacitka
@@ -150,48 +182,53 @@ allow = true;
 timerRED = millis();*/
 break;
 case 1://stisk BLACK buttonu
-Serial.println("switch BLACK just pressed"); 
+//Serial.println("switch BLACK just pressed"); 
 if (counter <= 0)counter = 0;
 else counter--; 
 //Serial.println (counter/4096.0*100,4);
 break;
 }
 
-if(prevcounter!=counter || remoteState!=remoteStateLast){
+if(prevcounter!=counter){
   if(counter == 0)digitalWrite(8, HIGH);
   else digitalWrite(8, LOW);
-  Serial.println (counter);
+  //Serial.println (counter);
+  //lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("set: "+String(counter)+" "+"l/m"+" ");
+  lcd.setCursor(0,1);
+  lcd.print(String(DACinput)+" "+String(DACinput/4095.0*5.0)+"V"+" ");
 /*if(justreleased){
   DACinput = count*4096/100-1;
   setDAC(DACinput);  
   }*/
   prevcounter=counter;
-  remoteStateLast = remoteState;
-}
-
-} else {
   
-  if(!remoteState){
-      remoteState = true;
-      Serial.print("d");
-      Serial.println(counter);
-      remoteStateLast = true;
-  }
-  byte c;
-    if(Serial.available()){
-      c = Serial.read();
-      counter = map(c, 0, 100, 0, 4095);
-      setDAC(counter);
-      nacteno = map(analogRead(DACoutputReadPin), 0, 1023, 0, 100);
-      Serial.print("d");
-      Serial.println(nacteno);
-    }
-  }
-
-
-
-
 }
+
+unsigned long currentMillis = millis();
+if((currentMillis - previousMillis) > 250UL){
+    nacteno = analogRead(DACoutputReadPin);
+  if(prevnacteno!=nacteno){
+    sprintf(str, "%.2f", nacteno/1023.0*5.0);
+
+    lcd.setCursor(0,2);
+    lcd.print("read: "+String(nacteno/1023.0*100)+" "+"l/m"+" ");
+    lcd.setCursor(0,3);
+    lcd.print(String(nacteno)+" "+String(nacteno/1023.0*5.0)+"V"+" ");
+
+
+    prevnacteno=nacteno;  
+  }
+previousMillis = currentMillis;
+}
+
+
+
+
+
+
+}//end setup()
 
 void check_switches()
 {
