@@ -42,6 +42,7 @@ byte previous_keystate[NUMBUTTONS], current_keystate[NUMBUTTONS];
 word DACinput = 0;
 const int DACoutputReadPin = A0;
 const int remoteTriggerPin = 9;
+const int pripojeno = 7;
 boolean dalkove = false;
 boolean remoteState = false;
 boolean remoteStateLast;
@@ -81,6 +82,9 @@ Serial.println(" buttons");*/
 pinMode(8, OUTPUT);
 pinMode(10, OUTPUT);
 digitalWrite(8, HIGH);
+pinMode(pripojeno, INPUT);
+digitalWrite(8, LOW);
+
 pinMode(DACoutputReadPin, INPUT);
 // Make input & enable pull-up resistors on switch pins
 for (i=0; i< NUMBUTTONS; i++) {
@@ -92,7 +96,7 @@ for (i=0; i< NUMBUTTONS; i++) {
 
 
 void loop() {  
-
+   
     if(pressed[0]){
       if(!allowRED){
     timerRED = millis(); //Serial.println("start REDtimer");
@@ -220,6 +224,16 @@ if((currentMillis - previousMillis) > 250UL){
 
     prevnacteno=nacteno;  
   }
+  if(digitalRead(pripojeno) == LOW){
+      lcd.clear();
+      lcd.setCursor(6,0);
+      lcd.print("PRIPOJTE");
+      lcd.setCursor(4,2);
+      lcd.print("KONTROLER !!!");
+    } 
+
+
+
 previousMillis = currentMillis;
 }
 
@@ -228,7 +242,7 @@ previousMillis = currentMillis;
 
 
 
-}//end setup()
+}//end loop()
 
 void check_switches()
 {
