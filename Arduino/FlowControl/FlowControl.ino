@@ -60,7 +60,7 @@ int counter = 0;
 int prevnacteno;
 int nacteno = 0;
 int pripojeno = LOW;
-int prevpripojeno;
+int prevpripojeno = HIGH;
 
 void setup() {
   byte i;
@@ -84,8 +84,8 @@ Serial.println(" buttons");*/
 pinMode(8, OUTPUT);
 pinMode(10, OUTPUT);
 digitalWrite(8, HIGH);
-pinMode(pripojeno, INPUT);
-digitalWrite(8, LOW);
+pinMode(pripojenoPin, INPUT);
+//digitalWrite(pripojenoPin, HIGH); //pull-up resistor
 
 pinMode(DACoutputReadPin, INPUT);
 // Make input & enable pull-up resistors on switch pins
@@ -121,7 +121,8 @@ if((currentMillis - previousMillis) > 250UL){
     lcd.setCursor(0,3);
     lcd.print(String(nacteno)+" "+String(nacteno/1023.0*5.0)+"V"+" ");
 
-  }  
+  }
+  if(pripojeno){
   nacteno = analogRead(DACoutputReadPin);
   if(prevnacteno!=nacteno){
     //sprintf(str, "%.2f", nacteno/1023.0*5.0);
@@ -133,6 +134,7 @@ if((currentMillis - previousMillis) > 250UL){
 
 
     prevnacteno=nacteno;  
+  }
   }
 }
 previousMillis = currentMillis;
