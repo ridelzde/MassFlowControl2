@@ -154,10 +154,10 @@ if(pripojeno){
 //po odmacknuti tlacitka zapise novou hodnotu prutoku do DAC
 if(justreleased[0]&&allowRED){
   allowRED=false;
-  DACinput = (int)((counter*4095.0/100.0)); //prevod rozsahu prutokomeru (0-100) na 12bitove cislo (0-4095)
+  DACinput = (int)((counter*1023.0/100.0)); //prevod rozsahu prutokomeru (0-100) na 12bitove cislo (0-4095)
   setDAC(DACinput);
   lcd.setCursor(0,1);
-  lcd.print(String(DACinput)+" "+String(DACinput/4095.0*5.0)+"V"+" ");
+  lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" ");
   //delay(50);  
   //Serial.print("Poslano do DAC: ");Serial.print(DACinput);Serial.print("  |  ");Serial.print(counter);Serial.print(" l/min");
   //Serial.print("  |  ");Serial.print(DACinput/4095.0*5.0, 4);Serial.println(" V");
@@ -188,10 +188,10 @@ if(pressed[1]){
   }
   if(justreleased[1]&&allowBLACK){
     allowBLACK=false;
-    DACinput = (int)((counter*4095.0/100.0));
+    DACinput = (int)((counter*1023.0/100.0));
     setDAC(DACinput);
     lcd.setCursor(0,1);
-    lcd.print(String(DACinput)+" "+String(DACinput/4095.0*5.0)+"V"+" "); 
+    lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" "); 
   //delay(50); 
   //Serial.print("Poslano do DAC: ");Serial.print(DACinput);Serial.print("  |  ");Serial.print(counter);Serial.print(" l/min");
   //Serial.print("  |  ");Serial.print(DACinput/4095.0*5.0, 4);Serial.println(" V");
@@ -234,7 +234,7 @@ if(prevcounter!=counter){
   lcd.setCursor(0,0);
   lcd.print("set: "+String(counter)+" "+"l/m"+" ");
   lcd.setCursor(0,1);
-  lcd.print(String(DACinput)+" "+String(DACinput/4095.0*5.0)+"V"+" ");
+  lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" ");
 /*if(justreleased){
   DACinput = count*4096/100-1;
   setDAC(DACinput);  
