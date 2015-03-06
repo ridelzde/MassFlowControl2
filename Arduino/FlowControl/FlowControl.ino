@@ -42,7 +42,7 @@ byte previous_keystate[NUMBUTTONS], current_keystate[NUMBUTTONS];
 word DACinput = 0;
 const int DACoutputReadPin = A0;
 const int remoteTriggerPin = 9;
-const int pripojeno = 7;
+const int pripojenoPin = 7;
 boolean dalkove = false;
 boolean remoteState = false;
 boolean remoteStateLast;
@@ -59,6 +59,8 @@ int prevcounter;
 int counter = 0; 
 int prevnacteno;
 int nacteno = 0;
+int pripojeno = LOW;
+int prevpripojeno;
 
 void setup() {
   byte i;
@@ -96,8 +98,39 @@ for (i=0; i< NUMBUTTONS; i++) {
 
 
 void loop() {  
-   
-    if(pressed[0]){
+
+unsigned long currentMillis = millis();
+if((currentMillis - previousMillis) > 250UL){
+  pripojeno = digitalRead(pripojenoPin);
+  if( pripojeno == LOW ){
+       //if(prevpripojeno == pripojeno) continue; 
+      lcd.clear();
+      lcd.setCursor(6,0);
+      lcd.print("PRIPOJTE");
+      lcd.setCursor(4,2);
+      lcd.print("KONTROLER !!!");
+    }else{ 
+    
+  nacteno = analogRead(DACoutputReadPin);
+  if(prevnacteno!=nacteno){
+    //sprintf(str, "%.2f", nacteno/1023.0*5.0);
+
+    lcd.setCursor(0,2);
+    lcd.print("read: "+String(nacteno/1023.0*100)+" "+"l/m"+" ");
+    lcd.setCursor(0,3);
+    lcd.print(String(nacteno)+" "+String(nacteno/1023.0*5.0)+"V"+" ");
+
+
+    prevnacteno=nacteno;  
+  }
+}
+previousMillis = currentMillis;
+prevpripojeno = pripojeno;
+} 
+
+
+if(pripojeno){   
+  if(pressed[0]){
       if(!allowRED){
     timerRED = millis(); //Serial.println("start REDtimer");
     allowRED = true;
@@ -210,36 +243,11 @@ if(prevcounter!=counter){
   
 }
 
-unsigned long currentMillis = millis();
-if((currentMillis - previousMillis) > 250UL){
-    nacteno = analogRead(DACoutputReadPin);
-  if(prevnacteno!=nacteno){
-    sprintf(str, "%.2f", nacteno/1023.0*5.0);
-
-    lcd.setCursor(0,2);
-    lcd.print("read: "+String(nacteno/1023.0*100)+" "+"l/m"+" ");
-    lcd.setCursor(0,3);
-    lcd.print(String(nacteno)+" "+String(nacteno/1023.0*5.0)+"V"+" ");
-
-
-    prevnacteno=nacteno;  
-  }
-  if(digitalRead(pripojeno) == LOW){
-      lcd.clear();
-      lcd.setCursor(6,0);
-      lcd.print("PRIPOJTE");
-      lcd.setCursor(4,2);
-      lcd.print("KONTROLER !!!");
-    } 
-
-
-
-previousMillis = currentMillis;
-}
 
 
 
 
+}//end if(pripojeno)
 
 
 }//end loop()
