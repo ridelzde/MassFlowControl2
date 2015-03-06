@@ -102,7 +102,7 @@ void loop() {
 unsigned long currentMillis = millis();
 if((currentMillis - previousMillis) > 250UL){
   pripojeno = digitalRead(pripojenoPin);
-  if( pripojeno == LOW ){
+  if( pripojeno == LOW && pripojeno != prevpripojeno){
        //if(prevpripojeno == pripojeno) continue; 
       lcd.clear();
       lcd.setCursor(6,0);
@@ -303,6 +303,7 @@ void setDAC(word value){
   //Serial.println("setDAC________________________");
   byte data = 0;
   digitalWrite(10, LOW); delay(100) ;//povoli zapis na DAC
+  value = value << 2;
   data = highByte(value); //bity 15-8
   data = 0b00001111 & data; //vynulování nejvyšších 4 bitů
   data = 0b00110000 | data; //konfigurace 4 MSB pro DAC 0=DACA, 0=buffered, 1=1x, 1=output enabled
