@@ -110,7 +110,18 @@ if((currentMillis - previousMillis) > 250UL){
       lcd.setCursor(4,2);
       lcd.print("KONTROLER !!!");
     }else{ 
-    
+  if(pripojeno == HIGH && pripojeno != prevpripojeno){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("set: "+String(counter)+" "+"l/m"+" ");
+    lcd.setCursor(0,1);
+    lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" ");
+    lcd.setCursor(0,2);
+    lcd.print("read: "+String(nacteno/1023.0*100)+" "+"l/m"+" ");
+    lcd.setCursor(0,3);
+    lcd.print(String(nacteno)+" "+String(nacteno/1023.0*5.0)+"V"+" ");
+
+  }  
   nacteno = analogRead(DACoutputReadPin);
   if(prevnacteno!=nacteno){
     //sprintf(str, "%.2f", nacteno/1023.0*5.0);
