@@ -22,7 +22,7 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
 // buttonchecker_nodelay_Adafruit.ino
 // // http://www.ediy.com.my/index.php/tutorials/item/96-debouncing-multiple-switches
     #define DEBOUNCE 10 // how many ms to debounce, 5+ ms is usually plenty
-    #define BUTTON_HOLD_DELAY 1500 //poklika ms drzeni buttonu zacne zrychlena zmena hodnot
+    #define BUTTON_HOLD_DELAY 1500 //po kolika ms drzeni buttonu zacne zrychlena zmena hodnot
     #define SPEED_INCR 40 //krok zrychlenych zmen v ms
     #define MAX_PRUTOK 100 // rozsah prutokomeru
 //define the buttons that we'll use.
@@ -37,16 +37,24 @@ byte buttons[] = {A3, A2};
 byte pressed[NUMBUTTONS], justpressed[NUMBUTTONS], justreleased[NUMBUTTONS];
 byte previous_keystate[NUMBUTTONS], current_keystate[NUMBUTTONS];
 
-
+String vystup = "";
+byte stepSize = 2;
+char test[20];
 
 word DACinput = 0;
 const int DACoutputReadPin = A0;
 const int remoteTriggerPin = 9;
 const int pripojenoPin = 7;
+const int plyn1Pin = 2;
+const int plyn2Pin = 3;
+const int plyn3Pin = 4;
+const int plyn4Pin = 5;
+double Vref = 4.93;
 boolean dalkove = false;
 boolean remoteState = false;
 boolean remoteStateLast;
 String line = "";
+String plyn = "";
 char str[10];
 unsigned long timerRED;
 unsigned long timerBLACK;
@@ -61,8 +69,10 @@ int prevnacteno;
 int nacteno = 0;
 int pripojeno = LOW;
 int prevpripojeno = HIGH;
+double Kfactor = 1;
 
 void setup() {
+analogReference(EXTERNAL);
   byte i;
 //Serial.begin(9600); //set up serial port
 //SPI.begin();
@@ -71,9 +81,9 @@ SPI_init(); //inicializace prenosu do DAC
 lcd.begin(20,4);
 lcd.backlight();
 lcd.setCursor(0,0);
-lcd.print("read: 0 l/m");
-lcd.setCursor(0,2);
 lcd.print("set: 0 l/m");
+lcd.setCursor(0,2);
+lcd.print("read: 0 l/m");
 //SPI.begin();
 //SPI.setBitOrder(MSBFIRST);
 //pinMode(10, OUTPUT);
@@ -85,6 +95,14 @@ pinMode(8, OUTPUT);
 pinMode(10, OUTPUT);
 digitalWrite(8, HIGH);
 pinMode(pripojenoPin, INPUT);
+pinMode(plyn1Pin, INPUT);
+digitalWrite(plyn1Pin, HIGH);
+pinMode(plyn2Pin, INPUT);
+digitalWrite(plyn2Pin, HIGH);
+pinMode(plyn3Pin, INPUT);
+digitalWrite(plyn3Pin, HIGH);
+pinMode(plyn4Pin, INPUT);
+digitalWrite(plyn4Pin, HIGH);
 //digitalWrite(pripojenoPin, HIGH); //pull-up resistor
 
 pinMode(DACoutputReadPin, INPUT);
@@ -115,22 +133,54 @@ if((currentMillis - previousMillis) > 250UL){
     lcd.setCursor(0,0);
     lcd.print("set: "+String(counter)+" "+"l/m"+" ");
     lcd.setCursor(0,1);
-    lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" ");
+    lcd.print(String(DACinput)+" "+String(DACinput/1023.0*Vref)+"V"+" ");
     lcd.setCursor(0,2);
-    lcd.print("read: "+String(nacteno/1023.0*100)+" "+"l/m"+" ");
+    lcd.print("read: "+String(nacteno/1023.0*100*Kfactor)+" "+"l/m"+" ");
     lcd.setCursor(0,3);
-    lcd.print(String(nacteno)+" "+String(nacteno/1023.0*5.0)+"V"+" ");
+    lcd.print(String(nacteno)+" "+String(nacteno/1023.0*Vref)+"V"+" "+plyn);
 
   }
   if(pripojeno){
+  if(!digitalRead(plyn1Pin)){ 
+    plyn="plyn1";
+    Kfactor = 1;
+    lcd.setCursor(0,2);
+    vystup = floatToString(test, nacteno/1023.0*Vref, 3, 5);
+    //lcd.print("read: "+ vystup +" "+"l/m"+" ");
+    lcd.print("read: "+String(nacteno/1023.0*100*Kfactor)+" "+"l/m"+" ");
+    lcd.setCursor(0,3);
+    lcd.print(String(nacteno)+" "+vystup+"V"+" "+plyn);}
+  else if(!digitalRead(plyn2Pin)){
+   plyn="plyn2";
+   Kfactor = 0.7;
+   lcd.setCursor(0,2);
+   lcd.print("read: "+String(nacteno/1023.0*100*Kfactor)+" "+"l/m"+" ");
+   lcd.setCursor(0,3);
+   lcd.print(String(nacteno)+" "+String(nacteno/1023.0*Vref)+"V"+" "+plyn);}
+  else if(!digitalRead(plyn3Pin)){
+   plyn="plyn3";
+   Kfactor = 0.98;
+   lcd.setCursor(0,2);
+   lcd.print("read: "+String(nacteno/1023.0*100*Kfactor)+" "+"l/m"+" ");
+   lcd.setCursor(0,3);
+   lcd.print(String(nacteno)+" "+String(nacteno/1023.0*4.93)+"V"+" "+plyn);}
+  else if(!digitalRead(plyn4Pin)){
+   plyn="plyn4";
+   Kfactor = 0.6;
+   lcd.setCursor(0,2);
+   lcd.print("read: "+String(nacteno/1023.0*100*Kfactor)+" "+"l/m"+" ");
+   lcd.setCursor(0,3);
+   lcd.print(String(nacteno)+" "+String(nacteno/1023.0*Vref)+"V"+" "+plyn);}
+
   nacteno = analogRead(DACoutputReadPin);
   if(prevnacteno!=nacteno){
     //sprintf(str, "%.2f", nacteno/1023.0*5.0);
 
     lcd.setCursor(0,2);
-    lcd.print("read: "+String(nacteno/1023.0*100)+" "+"l/m"+" ");
+    lcd.print("read: "+String(nacteno/1023.0*100*Kfactor)+" "+"l/m"+" ");
     lcd.setCursor(0,3);
-    lcd.print(String(nacteno)+" "+String(nacteno/1023.0*5.0)+"V"+" ");
+    vystup = floatToString(test, nacteno/1023.0*Vref, 3, 5);
+    lcd.print(String(nacteno)+" "+vystup+"V"+" "+plyn);
 
 
     prevnacteno=nacteno;  
@@ -170,7 +220,8 @@ if(justreleased[0]&&allowRED){
   DACinput = (int)((counter*1023.0/100.0)); //prevod rozsahu prutokomeru (0-100) na 12bitove cislo (0-4095)
   setDAC(DACinput);
   lcd.setCursor(0,1);
-  lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" ");
+  vystup = floatToString(test, DACinput/1023.0*Vref, 3, 5);
+  lcd.print(String(DACinput)+" "+vystup+"V"+" ");
   //delay(50);  
   //Serial.print("Poslano do DAC: ");Serial.print(DACinput);Serial.print("  |  ");Serial.print(counter);Serial.print(" l/min");
   //Serial.print("  |  ");Serial.print(DACinput/4095.0*5.0, 4);Serial.println(" V");
@@ -204,7 +255,8 @@ if(pressed[1]){
     DACinput = (int)((counter*1023.0/100.0));
     setDAC(DACinput);
     lcd.setCursor(0,1);
-    lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" "); 
+    vystup = floatToString(test, DACinput/1023.0*Vref, 3, 5);
+    lcd.print(String(DACinput)+" "+vystup+"V"+" "); 
   //delay(50); 
   //Serial.print("Poslano do DAC: ");Serial.print(DACinput);Serial.print("  |  ");Serial.print(counter);Serial.print(" l/min");
   //Serial.print("  |  ");Serial.print(DACinput/4095.0*5.0, 4);Serial.println(" V");
@@ -245,9 +297,10 @@ if(prevcounter!=counter){
   //Serial.println (counter);
   //lcd.clear();
   lcd.setCursor(0,0);
+  vystup = floatToString(test, DACinput/1023.0*Vref, 3, 5);
   lcd.print("set: "+String(counter)+" "+"l/m"+" ");
   lcd.setCursor(0,1);
-  lcd.print(String(DACinput)+" "+String(DACinput/1023.0*5.0)+"V"+" ");
+  lcd.print(String(DACinput)+" "+vystup+"V"+"   ");
 /*if(justreleased){
   DACinput = count*4096/100-1;
   setDAC(DACinput);  
@@ -337,3 +390,73 @@ void SPI_init(){
 //Serial.println("Inicializace: 0 l/min");
 //Serial.print(analogRead(DACoutputReadPin)*100.0/1024.0);Serial.println(" l/min z DAC");
 }
+
+
+void prepislcd(){
+
+}
+
+char * floatToString(char * outstr, double val, byte precision, byte widthp){
+  char temp[16];
+  byte i;
+
+  // compute the rounding factor and fractional multiplier
+  double roundingFactor = 0.5;
+  unsigned long mult = 1;
+  for (i = 0; i < precision; i++)
+  {
+    roundingFactor /= 10.0;
+    mult *= 10;
+  }
+  
+  temp[0]='\0';
+  outstr[0]='\0';
+
+  if(val < 0.0){
+    strcpy(outstr,"-\0");
+    val = -val;
+  }
+
+  val += roundingFactor;
+
+  strcat(outstr, itoa(int(val),temp,10));  //prints the int part
+  if( precision > 0) {
+    strcat(outstr, ".\0"); // print the decimal point
+    unsigned long frac;
+    unsigned long mult = 1;
+    byte padding = precision -1;
+    while(precision--)
+      mult *=10;
+
+    if(val >= 0)
+      frac = (val - int(val)) * mult;
+    else
+      frac = (int(val)- val ) * mult;
+    unsigned long frac1 = frac;
+
+    while(frac1 /= 10)
+      padding--;
+
+    while(padding--)
+      strcat(outstr,"0\0");
+
+    strcat(outstr,itoa(frac,temp,10));
+  }
+
+  // generate space padding 
+  if ((widthp != 0)&&(widthp >= strlen(outstr))){
+    byte J=0;
+    J = widthp - strlen(outstr);
+    
+    for (i=0; i< J; i++) {
+      temp[i] = ' ';
+    }
+
+    temp[i++] = '\0';
+    strcat(temp,outstr);
+    strcpy(outstr,temp);
+  }
+  
+  return outstr;
+}
+
